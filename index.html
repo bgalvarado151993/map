@@ -927,6 +927,23 @@ h1,h2,p{margin:0} h1{font-size:32px;line-height:1.02;margin-top:4px} h2{font-siz
   }
 }
 
+/* Only the outer ring moves; the plus and its touch target stay still. */
+#homeScreen .pin-dot::before{
+  content:"";
+  position:absolute;
+  inset:-5px;
+  border:1px solid #f2efe9;
+  border-radius:50%;
+  opacity:0;
+  pointer-events:none;
+  animation:var(--map-hint-animation,none) var(--map-hint-duration,1s) cubic-bezier(.2,.6,.3,1) var(--map-hint-delay,0s) infinite both;
+}
+#homeScreen.hidden .pin-dot::before{
+  animation-play-state:paused;
+}
+@media (prefers-reduced-motion:reduce){
+  #homeScreen .pin-dot::before{animation:none}
+}
 </style>
 </head>
 <body>
@@ -4514,6 +4531,19 @@ if (LOT_INFO.Jaramillo && LOT_INFO.Jaramillo.Mario) {
 }
 // JARAMILLO AND CANAS VERDES KMZ DATA END
 
+// Curated lot list: preserve source geometry while controlling what visitors see.
+const OMITTED_LOTS={
+ "El Velo":new Set(["Palmito","Pacamara"]),
+ "Cañas Verdes":new Set(["Gladiola","Accesiones Gladiolas","Jacinta"])
+};
+Object.entries(OMITTED_LOTS).forEach(([farm,names])=>{
+ DATA.lots[farm]=Object.fromEntries(
+  Object.entries(DATA.lots[farm]||{})
+   .filter(([name])=>!names.has(name))
+   .map(([name,coords])=>[name==="El Nido"?"Nido":name,coords])
+ );
+});
+
 
 const attract=document.getElementById("attractScreen"), home=document.getElementById("homeScreen"), farmScreen=document.getElementById("farmScreen"), lotScreen=document.getElementById("lotScreen");
 const homeFooterLogo=document.querySelector("#homeScreen .map-footer-logo"), lotFooterLogo=document.querySelector("#lotScreen .footer-mini-logo img");
@@ -4565,8 +4595,25 @@ function farmsGeoJSON(){
  };
 }
 
-function makeFarmMarker(name){
+const markerHintCycles=new Map();
+function setMarkerHintTiming(el,index,count){
+ const cycle=count*1.5+2;
+ let animationName=markerHintCycles.get(count);
+ if(!animationName){
+  animationName=`mapTapRing${count}`;
+  const style=document.createElement("style");
+  // A count-sized cycle keeps the farm pulses separate.
+  style.textContent=`@keyframes ${animationName}{0%{opacity:0;transform:scale(.86)}${.22/cycle*100}%{opacity:.65;transform:scale(1)}${1.1/cycle*100}%{opacity:0;transform:scale(1.4)}100%{opacity:0;transform:scale(1.4)}}`;
+  document.head.appendChild(style);
+  markerHintCycles.set(count,animationName);
+ }
+ el.style.setProperty("--map-hint-animation",animationName);
+ el.style.setProperty("--map-hint-duration",`${cycle}s`);
+ el.style.setProperty("--map-hint-delay",`${index*1.5+.5}s`);
+}
+function makeFarmMarker(name,index,count){
  const el=document.createElement("button");el.className="farm-marker";el.innerHTML=`<span class="pin-dot" aria-hidden="true"></span><span class="farm-label"><b>${name}</b></span>`;
+ setMarkerHintTiming(el,index,count);
  el.addEventListener("click",()=>flyToFarm(name));
  const mk=new maplibregl.Marker({element:el,anchor:"center"}).setLngLat(farmCenter(name)).addTo(map);markers.push(mk);
 }
@@ -4657,7 +4704,7 @@ function initMap(){
    map.addSource("farms",{type:"geojson",data:farmsGeoJSON()});
    map.addLayer({id:"farms-fill",type:"fill",source:"farms",paint:{"fill-color":"#ffffff","fill-opacity":0.13}});
    map.addLayer({id:"farms-line",type:"line",source:"farms",paint:{"line-color":"#ffffff","line-width":2.2,"line-opacity":0.95}});
-   Object.keys(DATA.farmPolygons).forEach(name=>makeFarmMarker(name));
+   Object.keys(DATA.farmPolygons).forEach((name,index,names)=>makeFarmMarker(name,index,names.length));
    makePlaceMarker("Boquete",DATA.places.Boquete,"●");makePlaceMarker("Volcán Barú",DATA.places["Volcán Barú"],"▲");makePlaceMarker("Mill",DATA.places.Mill,"◆");
    map.fitBounds([[-82.552,8.724],[-82.386,8.835]],{padding:{top:75,bottom:85,left:36,right:36},duration:0});
    map.easeTo({pitch:58,bearing:18,duration:900});
