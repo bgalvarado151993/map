@@ -798,6 +798,11 @@ h1,h2,p{margin:0} h1{font-size:32px;line-height:1.02;margin-top:4px} h2{font-siz
 .farm-zoom-controls button+button{border-left:1px solid rgba(0,0,0,.18)}
 .farm-zoom-controls button:first-child{color:#8a2432;font-weight:700}
 .farm-zoom-controls button:active{background:rgba(138,36,50,.1)}
+.farm-zoom-controls button:disabled{
+  opacity:.3;
+  background:transparent;
+  cursor:default;
+}
 #farmScreen .farm-meta{
   margin:14px 18px 12px;
   padding:9px 0 8px;
@@ -2425,11 +2430,22 @@ function tr(key, vars={}){
  return s;
 }
 
+const FARM_MAP_MAX_ZOOM=18;
 let currentLang="en", currentFarm="Jaramillo", map, markers=[], idleTimer, farmMap=null, lotMap=null, attractMap=null, attractDrift=null, farmLotMarkers=[];
+
+function updateFarmZoomButtons(){
+ const zoomIn=document.getElementById("farmZoomIn");
+ const zoomOut=document.getElementById("farmZoomOut");
+ if(!farmMap){zoomIn.disabled=false;zoomOut.disabled=false;return;}
+ const zoom=farmMap.getZoom();
+ zoomIn.disabled=zoom>=farmMap.getMaxZoom()-.01;
+ zoomOut.disabled=zoom<=farmMap.getMinZoom()+.01;
+}
 
 function changeFarmZoom(delta){
  if(!farmMap) return;
- farmMap.easeTo({zoom:farmMap.getZoom()+delta,duration:280,essential:true});
+ const target=Math.max(farmMap.getMinZoom(),Math.min(farmMap.getMaxZoom(),farmMap.getZoom()+delta));
+ farmMap.easeTo({zoom:target,duration:280,essential:true});
  resetIdle();
 }
 document.getElementById("farmZoomIn").addEventListener("click",e=>{e.stopPropagation();changeFarmZoom(1)});
@@ -4757,6 +4773,7 @@ function buildRasterStyle(){
         type:"raster",
         tiles:["https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"],
         tileSize:256,
+        maxzoom:FARM_MAP_MAX_ZOOM,
         attribution:"Tiles © Esri"
       }
     },
@@ -4852,7 +4869,7 @@ function createFarmSatelliteMap(name){
     center:farmCenter(name),
     zoom:15,
     minZoom:12,
-    maxZoom:19,
+    maxZoom:FARM_MAP_MAX_ZOOM,
     pitch:48,
     bearing:0,
     interactive:true,
@@ -4861,12 +4878,14 @@ function createFarmSatelliteMap(name){
     antialias:true
   });
   if(farmMap.touchZoomRotate && farmMap.touchZoomRotate.disableRotation) farmMap.touchZoomRotate.disableRotation();
+  farmMap.on("zoom",updateFarmZoomButtons);
   farmMap.on("load",()=>{
     const b=farmBounds(name);
     farmMap.fitBounds(b,{padding:{top:58,bottom:52,left:42,right:42},duration:0});
     farmMap.easeTo({pitch:48,bearing:0,duration:500});
     addLotLayers(farmMap,name,null,true);
     addFarmLotTagMarkers(farmMap,name);
+    updateFarmZoomButtons();
   });
 }
 function createLotSatelliteMap(farmName,lotName){
@@ -4876,6 +4895,7 @@ function createLotSatelliteMap(farmName,lotName){
     style:buildRasterStyle(),
     center:centroid((DATA.lots[farmName]||{})[lotName]||farmPoints(farmName)),
     zoom:16,
+    maxZoom:FARM_MAP_MAX_ZOOM,
     pitch:45,
     bearing:0,
     interactive:false,
