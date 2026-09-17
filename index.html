@@ -69,7 +69,7 @@ h1,h2,p{margin:0} h1{font-size:32px;line-height:1.02;margin-top:4px} h2{font-siz
 .lotcontent{flex:1;overflow:auto;padding:18px 18px 30px}
 .lotstats{margin-top:14px}
 .milestones{margin-top:14px} .section-title{font-size:9px;text-transform:uppercase;letter-spacing:.15em;font-weight:700} .milestones p{font-size:12px;line-height:1.85;margin-top:4px}
-.gallery{margin-top:15px} .photos{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-top:8px} .photo{min-height:88px;border-radius:8px;background:linear-gradient(145deg,#b6b8ae,#7e8277);display:flex;align-items:flex-end;padding:8px;color:white;font-size:9px}
+.gallery{margin-top:15px} .photos{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-top:8px} .photo{min-height:88px;border-radius:8px;background:#d8d4cc;display:block;overflow:hidden;color:white;font-size:9px}.photo img{display:block;width:100%;height:100%;min-height:88px;object-fit:cover}.photo.is-unavailable{display:flex;align-items:center;justify-content:center;padding:8px;color:var(--muted);text-align:center}
 .error{position:absolute;inset:0 0 82px;z-index:30;background:#ebe9e2;display:none;align-items:center;justify-content:center;padding:30px;text-align:center} .error.show{display:flex} .error b{display:block;margin-bottom:8px}
 .loading{position:absolute;inset:0 0 82px;z-index:25;background:#d9d8cf;display:flex;align-items:center;justify-content:center;text-align:center;color:#555;font-size:12px}
 [dir="rtl"] .farm-marker{text-align:right}
@@ -1024,9 +1024,9 @@ to explore</span></div>
     </div>
     <div class="farm-meta">
       <div class="stats">
-        <div class="stat"><small data-i18n="altitude">Altitude</small><b>—</b></div>
-        <div class="stat"><small data-i18n="area">Area</small><b>— ha</b></div>
-        <div class="stat"><small data-i18n="established">Established</small><b>—</b></div>
+        <div class="stat"><small data-i18n="altitude">Altitude</small><b id="farmAltitude">—</b></div>
+        <div class="stat"><small data-i18n="area">Area</small><b id="farmArea">—</b></div>
+        <div class="stat"><small data-i18n="established">Established</small><b id="farmEstablished">—</b></div>
       </div>
     </div>
     <nav class="farmnav integrated-farm-footer">
@@ -1063,16 +1063,16 @@ to explore</span></div>
       <div class="stats lotstats">
         <div class="stat"><small data-i18n="altitude">Altitude</small><b id="lotAltitude">1,400 masl</b></div>
         <div class="stat"><small data-i18n="variety">Variety</small><b id="lotVariety">Geisha</b></div>
-        <div class="stat"><small data-i18n="area">Area</small><b>— ha</b></div>
+        <div class="stat"><small data-i18n="area">Area</small><b id="lotArea">—</b></div>
       </div>
-      <p class="description" id="lotDescription">Lorem ipsum dolor sit amet, consectetur adipiscing elit. This space will tell the story of the lot, its landscape, history and place within the farm.</p>
-      <div class="milestones">
+      <p class="description" id="lotDescription" hidden></p>
+      <div class="milestones" id="lotMilestones" hidden>
         <div class="section-title" data-i18n="milestones">Notable Coffees</div>
-        <p id="milestoneContent">2008 · Best of Panama — 1st Place, Geisha Washed<br>2010 · Best of Panama — 1st Place, Geisha Washed<br>2011 · Best of Panama — 1st Place, Geisha Washed</p>
+        <p id="milestoneContent"></p>
       </div>
-      <div class="gallery">
+      <div class="gallery" id="lotGallery" hidden>
         <div class="section-title" data-i18n="photos">Gallery</div>
-        <div class="photos"><div class="photo">Photo 01</div><div class="photo">Photo 02</div><div class="photo">Photo 03</div></div>
+        <div class="photos" id="lotPhotos"></div>
       </div>
     </div>
     <nav class="lot-footer">
@@ -2399,11 +2399,59 @@ DATA.lots["El Velo"] = {
   ]
 };
 // EL VELO KMZ DATA END
-const LOT_INFO = {
-  "Jaramillo": {
-    "Mario": {altitude:"1,400 masl", variety:"Geisha", milestones:"2008 · Best of Panama — 1st Place, Geisha Washed<br>2010 · Best of Panama — 1st Place, Geisha Washed<br>2011 · Best of Panama — 1st Place, Geisha Washed"}
-  }
+const FARM_INFO={
+ "Jaramillo":{description:"The Peterson family purchased the land that became Jaramillo in 1997. The farm rises from rolling lower hills to steep slopes. Geisha was planted higher on the farm, and a high-altitude Jaramillo lot was central to the 2004 Best of Panama discovery. The Jaramillo mountain air is wet and cold, an environment where Geisha’s bright, floral aromatics express themselves.",altitude:"1,500 - 1,950 masl",area:"67.7 ha",established:"1997"},
+ "El Velo":{description:"El Velo was purchased by the Petersons in 2012. Its relatively flat landscape allows coffee to be planted in more uniform rows. The farm includes Geisha and smaller lots of exotic varieties such as Laurina, Pacamara and SL-34, and more than 400 research accessions obtained from CATIE.",altitude:"1,650 - 2,200 masl",area:"51.6 ha",established:"2012"},
+ "Cañas Verdes":{description:"Half of Cañas Verdes is part of the original Peterson holdings purchased in 1967. The land was first used for beef cattle and later dairy cattle; coffee had also been grown in the hard-to-reach area by small growers before the Peterson family expanded Geisha production there. Cañas Verdes has a distinct three-to-four-month dry season, while the air remains cool. After the rediscovery of Geisha, the Peterson family expanded production by acquiring smaller lots around the original Cañas Verdes property. Many award-winning Esmeralda Geisha lots have come from its hillsides.",altitude:"1,500 - 2,050 masl",area:"31.4 ha",established:"1967"}
 };
+const LOT_INFO={};
+const LOT_CONTENT_ROWS=[
+ ["Jaramillo","Manantial",1840,"Geisha",14.62,"",["17N4OVltcoTd9ESmEIoC4PcFWjIcDsDZ5","17N4OVltcoTd9ESmEIoC4PcFWjIcDsDZ5","1pL2fbgf-7x8sypTwQPbTo1qJN7TBBUnZ"]],
+ ["Jaramillo","Buenos Aires",1690,"Geisha",29.87,"",["1xh9ZOqeuwpPIsofwoexBfY-JdLZkotEi","1avhQVre8J_uRswhyVqHtOkakvoiIMdIc","1unozelqJ60Uvl9I90FXIKe_US8CLK00g"]],
+ ["Jaramillo","Bosque",1700,"Geisha",1.87,"",["1xq3N-HmGnhFBtOgbSWK0frc65Vb9lrz-","1xq3N-HmGnhFBtOgbSWK0frc65Vb9lrz-","1kRJrz7jg1_DuGKBCMA2sXtzkNH_tbBxL"]],
+ ["Jaramillo","Noria",1650,"Geisha",6.54,"",["1uobPQEbzcUGKcgDo1m5SQHWWaqVV1Dyg","1uobPQEbzcUGKcgDo1m5SQHWWaqVV1Dyg","1uobPQEbzcUGKcgDo1m5SQHWWaqVV1Dyg"]],
+ ["Jaramillo","Mario Arriba",1630,"Geisha",4.2,"",["1kRJrz7jg1_DuGKBCMA2sXtzkNH_tbBxL","1kRJrz7jg1_DuGKBCMA2sXtzkNH_tbBxL","1kRJrz7jg1_DuGKBCMA2sXtzkNH_tbBxL"]],
+ ["Jaramillo","Mario Abajo",1580,"Geisha",7.58,"",["1QHxiE2wODSI2nHVtc2njSTRKXjzdbJud","1WLPsAC7Zw89PrPg5tnslxHBAJjd4XsCO","1WLPsAC7Zw89PrPg5tnslxHBAJjd4XsCO"]],
+ ["Jaramillo","Reina",1570,"Geisha",2.98,"",["1kRJrz7jg1_DuGKBCMA2sXtzkNH_tbBxL","1WLPsAC7Zw89PrPg5tnslxHBAJjd4XsCO","1WLPsAC7Zw89PrPg5tnslxHBAJjd4XsCO"]],
+ ["El Velo","Pinto",2180,"Geisha",3.32,"",["114PBHdFzIwj88DpMPcgD5U6GxgqPTSAv","114PBHdFzIwj88DpMPcgD5U6GxgqPTSAv","114PBHdFzIwj88DpMPcgD5U6GxgqPTSAv"]],
+ ["El Velo","Valle Alto",2000,"Geisha",2.54,"",["114PBHdFzIwj88DpMPcgD5U6GxgqPTSAv","1eGneFBfYpbtngPB4YTCw7pftrvLwGYtJ","1eGneFBfYpbtngPB4YTCw7pftrvLwGYtJ"]],
+ ["El Velo","Valle Loma",1970,"Geisha",1.99,"",["1eGneFBfYpbtngPB4YTCw7pftrvLwGYtJ","16djTt7yQkLnnObtmowz42BKYJpPbCbEn","1eGneFBfYpbtngPB4YTCw7pftrvLwGYtJ"]],
+ ["El Velo","Aguila",1860,"Geisha",3.26,"",["114PBHdFzIwj88DpMPcgD5U6GxgqPTSAv","114PBHdFzIwj88DpMPcgD5U6GxgqPTSAv","114PBHdFzIwj88DpMPcgD5U6GxgqPTSAv"]],
+ ["El Velo","Vista",1830,"Geisha",5.28,"",["114PBHdFzIwj88DpMPcgD5U6GxgqPTSAv","114PBHdFzIwj88DpMPcgD5U6GxgqPTSAv","1YxS35qf8ii_x1RNL_33e6c0nG9JjBRDV"]],
+ ["El Velo","Mural",1790,"Geisha",6.12,"",["114PBHdFzIwj88DpMPcgD5U6GxgqPTSAv","114PBHdFzIwj88DpMPcgD5U6GxgqPTSAv","114PBHdFzIwj88DpMPcgD5U6GxgqPTSAv"]],
+ ["El Velo","Guabo",1800,"Geisha",3.43,"",["1QHxiE2wODSI2nHVtc2njSTRKXjzdbJud","1YxS35qf8ii_x1RNL_33e6c0nG9JjBRDV","1YxS35qf8ii_x1RNL_33e6c0nG9JjBRDV"]],
+ ["El Velo","Laurina",1810,"Laurina",2.12,"Best of Panama 2025 Varietals champion (92.88 pts). The El Velo Laurina later achieved a category-record auction price of US$8,040/kg.",["114PBHdFzIwj88DpMPcgD5U6GxgqPTSAv","1oURNnn__EMy_lRDdyFzsNbdlOJevuQod","13dxv5SJRUjb8h6EvlrGMtiLKu7Ee3s-2"]],
+ ["El Velo","SL 34",1860,"SL 34",0.67,"",["114PBHdFzIwj88DpMPcgD5U6GxgqPTSAv","1oURNnn__EMy_lRDdyFzsNbdlOJevuQod","1oURNnn__EMy_lRDdyFzsNbdlOJevuQod"]],
+ ["El Velo","Durazno",1770,"Geisha",4.82,"",["1oURNnn__EMy_lRDdyFzsNbdlOJevuQod","1oURNnn__EMy_lRDdyFzsNbdlOJevuQod","1VkZ0Lls9CvRQDhAWTv1oB0xG5Dl7U0EW"]],
+ ["El Velo","Higo",1770,"Geisha",5.93,"",["1oURNnn__EMy_lRDdyFzsNbdlOJevuQod","1QHxiE2wODSI2nHVtc2njSTRKXjzdbJud","1YxS35qf8ii_x1RNL_33e6c0nG9JjBRDV"]],
+ ["El Velo","Palmar",1840,"Geisha",3.09,"",["1oURNnn__EMy_lRDdyFzsNbdlOJevuQod","1YxS35qf8ii_x1RNL_33e6c0nG9JjBRDV","11KOt2rgFYjT7EfSJdxc477qn4OEPwwWH"]],
+ ["El Velo","Porton",1710,"Geisha",6.54,"",["1oURNnn__EMy_lRDdyFzsNbdlOJevuQod","1QHxiE2wODSI2nHVtc2njSTRKXjzdbJud","11KOt2rgFYjT7EfSJdxc477qn4OEPwwWH"]],
+ ["El Velo","Accesiones 1",1690,"Accessions",1.31,"",["1VkZ0Lls9CvRQDhAWTv1oB0xG5Dl7U0EW","14RgAfuGn2Yl12AlqI5KiJggn96VMA6Nc","1arVVcjfibP6pnW1dgqyObUDjbzFlh2HP"]],
+ ["El Velo","Accesiones 2",1740,"Accessions",1.51,"",["1VkZ0Lls9CvRQDhAWTv1oB0xG5Dl7U0EW","14RgAfuGn2Yl12AlqI5KiJggn96VMA6Nc","1arVVcjfibP6pnW1dgqyObUDjbzFlh2HP"]],
+ ["Cañas Verdes","Nido",2040,"Geisha",1.21,"Best of Panama 2025 record-setting lot. Nido won Geisha Washed with 98.00 pts and Geisha Natural with 97.00 pts, both record scores. The washed lot later set a world auction record at US$30,204/kg; the natural lot reached a category-record US$23,608/kg.",["18EWYB03N_466UNMe9mjMbUKmfi-n-nSM","18EWYB03N_466UNMe9mjMbUKmfi-n-nSM","18EWYB03N_466UNMe9mjMbUKmfi-n-nSM"]],
+ ["Cañas Verdes","Eden",1980,"Geisha",0.23,"",["18EWYB03N_466UNMe9mjMbUKmfi-n-nSM","18EWYB03N_466UNMe9mjMbUKmfi-n-nSM","18EWYB03N_466UNMe9mjMbUKmfi-n-nSM"]],
+ ["Cañas Verdes","Gigante",1890,"Geisha",0.25,"",["18EWYB03N_466UNMe9mjMbUKmfi-n-nSM","18EWYB03N_466UNMe9mjMbUKmfi-n-nSM","18EWYB03N_466UNMe9mjMbUKmfi-n-nSM"]],
+ ["Cañas Verdes","Montaña",1790,"Geisha",0.73,"2017 Best of Panama Geisha Natural champion (94.115 pts). The Montaña lot set a then-world-record auction price of US$601/lb.",["1OxMDvXDfNWO5WANTf4DfAMr2jlW7sOLu","1Q0DffQBvaNFaQdxIEoYgyES2XcwksARP","11KOt2rgFYjT7EfSJdxc477qn4OEPwwWH"]],
+ ["Cañas Verdes","Tumaco",1760,"Geisha",0.99,"Best of Panama 2026 — 2nd Place Geisha Natural & 3rd Place Geisha Washed",["1VkZ0Lls9CvRQDhAWTv1oB0xG5Dl7U0EW","1Q0DffQBvaNFaQdxIEoYgyES2XcwksARP","11KOt2rgFYjT7EfSJdxc477qn4OEPwwWH"]],
+ ["Cañas Verdes","Reserva Cabaña",1780,"Geisha",1.22,"",["1OxMDvXDfNWO5WANTf4DfAMr2jlW7sOLu","1Q0DffQBvaNFaQdxIEoYgyES2XcwksARP","11KOt2rgFYjT7EfSJdxc477qn4OEPwwWH"]],
+ ["Cañas Verdes","Cabaña Arriba",1730,"Geisha",2.23,"",["14iBQelsjo6JYSZwSCsjA07l7dh8PAFtH","14iBQelsjo6JYSZwSCsjA07l7dh8PAFtH","11KOt2rgFYjT7EfSJdxc477qn4OEPwwWH"]],
+ ["Cañas Verdes","Cabaña Abajo",1710,"Geisha",2.83,"",["14iBQelsjo6JYSZwSCsjA07l7dh8PAFtH","14iBQelsjo6JYSZwSCsjA07l7dh8PAFtH","11KOt2rgFYjT7EfSJdxc477qn4OEPwwWH"]],
+ ["Cañas Verdes","León",1630,"Geisha",4.56,"",["1VkZ0Lls9CvRQDhAWTv1oB0xG5Dl7U0EW","14iBQelsjo6JYSZwSCsjA07l7dh8PAFtH","11KOt2rgFYjT7EfSJdxc477qn4OEPwwWH"]],
+ ["Cañas Verdes","Lino",1650,"Geisha",3.27,"",["1VkZ0Lls9CvRQDhAWTv1oB0xG5Dl7U0EW","14iBQelsjo6JYSZwSCsjA07l7dh8PAFtH","11KOt2rgFYjT7EfSJdxc477qn4OEPwwWH"]],
+ ["Cañas Verdes","Fundador",1630,"Geisha",6.7,"",["1VkZ0Lls9CvRQDhAWTv1oB0xG5Dl7U0EW","14iBQelsjo6JYSZwSCsjA07l7dh8PAFtH","11KOt2rgFYjT7EfSJdxc477qn4OEPwwWH"]],
+ ["Cañas Verdes","Coronado",1600,"Geisha",2.7,"",["1VkZ0Lls9CvRQDhAWTv1oB0xG5Dl7U0EW","1YxS35qf8ii_x1RNL_33e6c0nG9JjBRDV","11KOt2rgFYjT7EfSJdxc477qn4OEPwwWH"]],
+ ["Cañas Verdes","Trapiche",1570,"Geisha",4.46,"",["14iBQelsjo6JYSZwSCsjA07l7dh8PAFtH","1OxMDvXDfNWO5WANTf4DfAMr2jlW7sOLu","11KOt2rgFYjT7EfSJdxc477qn4OEPwwWH"]]
+];
+LOT_CONTENT_ROWS.forEach(([farm,lot,altitude,variety,area,milestones,photos])=>{
+ (LOT_INFO[farm]||={})[lot]={
+  description:"",
+  altitude:`${altitude.toLocaleString("en-US")} masl`,
+  variety,
+  area:`${Number(area).toFixed(2)} ha`,
+  milestones,
+  photos
+ };
+});
 const I18N = {
  en:{map:"Map",farm:"Farm",lot:"Lot",altitude:"Altitude",area:"Area",established:"Established",tapLot:"Tap a lot to learn more",zoomMap:"Zoom map",variety:"Variety",milestones:"Notable Coffees",photos:"Gallery",prompt:"Touch a farm\nto explore",explore:"EXPLORE THE FARMS",farmIntro:"A short introduction to {farm} will appear here, including altitude range, area, establishment year and its story.",lotIntro:"This space will tell the story of {lot}, its landscape, history and place within {farm}.",placeholderMilestones:"Content placeholder for notable coffees and milestones from this lot.",fly:"Flying to {farm}…",tapExplore:"Tap to explore →"},
  es:{map:"Mapa",farm:"Finca",lot:"Lote",altitude:"Altitud",area:"Superficie",established:"Establecida",tapLot:"Toca un lote para descubrir su historia",zoomMap:"Amplía el mapa",variety:"Variedad",milestones:"Cafés destacados",photos:"Galería",prompt:"Toca una finca para explorar",explore:"EXPLORA LAS FINCAS",farmIntro:"Aquí aparecerá una breve introducción a {farm}, incluyendo rango de altitud, superficie, año de establecimiento y su historia.",lotIntro:"Este espacio contará la historia de {lot}, su paisaje, historia y lugar dentro de {farm}.",placeholderMilestones:"Aquí aparecerán los cafés e hitos destacados de este lote.",fly:"Volando hacia {farm}…",tapExplore:"Toca para explorar →"},
@@ -4541,10 +4589,6 @@ DATA.lots["Cañas Verdes"] = {
     ]
   ]
 };
-if (LOT_INFO.Jaramillo && LOT_INFO.Jaramillo.Mario) {
-  LOT_INFO.Jaramillo["Mario Arriba"] = LOT_INFO.Jaramillo.Mario;
-  LOT_INFO.Jaramillo["Mario Abajo"] = LOT_INFO.Jaramillo.Mario;
-}
 // JARAMILLO AND CANAS VERDES KMZ DATA END
 
 // Curated lot list: preserve source geometry while controlling what visitors see.
@@ -4568,6 +4612,13 @@ if(homeFooterLogo && lotFooterLogo){
  lotFooterLogo.alt=homeFooterLogo.alt;
 }
 function showScreen(s){[attract,home,farmScreen,lotScreen].forEach(x=>x.classList.add("hidden"));s.classList.remove("hidden")}
+function applyFarmContent(name){
+ const info=FARM_INFO[name]||{};
+ document.getElementById("farmDescription").textContent=info.description||"";
+ document.getElementById("farmAltitude").textContent=info.altitude||"—";
+ document.getElementById("farmArea").textContent=info.area||"—";
+ document.getElementById("farmEstablished").textContent=info.established||"—";
+}
 function applyLanguage(lang){
  currentLang=lang; document.documentElement.lang=lang; document.documentElement.dir=lang==="ar"?"rtl":"ltr";
  document.querySelectorAll(".languageSelect").forEach(s=>s.value=lang);
@@ -4575,9 +4626,7 @@ function applyLanguage(lang){
  document.getElementById("mapPrompt").textContent=I18N[lang].prompt; const homeTitleEl=document.getElementById("homeTitle"); if(homeTitleEl) homeTitleEl.textContent=I18N[lang].explore;
  
  const farmNameEl=document.getElementById("farmName");
- if(farmNameEl && !farmScreen.classList.contains("hidden")) document.getElementById("farmDescription").textContent=tr("farmIntro",{farm:farmNameEl.textContent});
- const lotNameEl=document.getElementById("lotName");
- if(lotNameEl && !lotScreen.classList.contains("hidden")) document.getElementById("lotDescription").textContent=tr("lotIntro",{lot:lotNameEl.textContent,farm:currentFarm});
+ if(farmNameEl && !farmScreen.classList.contains("hidden")) applyFarmContent(farmNameEl.textContent);
  resetIdle();
 }
 document.querySelectorAll(".languageSelect").forEach(s=>s.addEventListener("change",e=>applyLanguage(e.target.value)));
@@ -4915,7 +4964,7 @@ function createLotSatelliteMap(farmName,lotName){
 function renderFarm(name){
  currentFarm=name;
  document.getElementById("farmName").textContent=name;
- document.getElementById("farmDescription").textContent=tr("farmIntro",{farm:name});
+ applyFarmContent(name);
  document.querySelectorAll("#farmScreen [data-jump]").forEach(button=>{
   if(button.dataset.jump===name) button.setAttribute("aria-current","page");
   else button.removeAttribute("aria-current");
@@ -4932,8 +4981,37 @@ function openLot(farmName,lotName){
  const info=(LOT_INFO[farmName]||{})[lotName]||{};
  document.getElementById("lotAltitude").textContent=info.altitude||"—";
  document.getElementById("lotVariety").textContent=info.variety||"—";
- document.getElementById("milestoneContent").innerHTML=info.milestones||tr("placeholderMilestones");
- document.getElementById("lotDescription").textContent=tr("lotIntro",{lot:lotName,farm:farmName});
+ document.getElementById("lotArea").textContent=info.area||"—";
+ const description=document.getElementById("lotDescription");
+ description.textContent=info.description||"";
+ description.hidden=!info.description;
+ const milestones=document.getElementById("lotMilestones");
+ document.getElementById("milestoneContent").textContent=info.milestones||"";
+ milestones.hidden=!info.milestones;
+ const gallery=document.getElementById("lotGallery");
+ const photoGrid=document.getElementById("lotPhotos");
+ photoGrid.replaceChildren();
+ const photos=(info.photos||[]).filter(Boolean).slice(0,3);
+ gallery.hidden=!photos.length;
+ photos.forEach((id,index)=>{
+  const link=document.createElement("a");
+  link.className="photo";
+  link.href=`https://drive.google.com/file/d/${encodeURIComponent(id)}/view`;
+  link.target="_blank";
+  link.rel="noopener noreferrer";
+  link.setAttribute("aria-label",`${lotName} photo ${index+1}`);
+  const image=document.createElement("img");
+  image.src=`https://drive.google.com/thumbnail?id=${encodeURIComponent(id)}&sz=w1000`;
+  image.alt=`${lotName} photo ${index+1}`;
+  image.loading="lazy";
+  image.addEventListener("error",()=>{
+   image.remove();
+   link.classList.add("is-unavailable");
+   link.textContent="Open photo";
+  },{once:true});
+  link.appendChild(image);
+  photoGrid.appendChild(link);
+ });
  showScreen(lotScreen);
  setTimeout(()=>createLotSatelliteMap(farmName,lotName),80);
  resetIdle();
