@@ -63,13 +63,20 @@ h1,h2,p{margin:0} h1{font-size:32px;line-height:1.02;margin-top:4px} h2{font-siz
 .stats{display:grid;grid-template-columns:repeat(3,1fr);gap:7px}
 .stat{padding:8px 3px;text-align:center;border-top:1px solid var(--line);border-bottom:1px solid var(--line)} .stat small{display:block;font-size:7px;text-transform:uppercase;letter-spacing:.13em;color:var(--muted)} .stat b{display:block;font-size:12px;margin-top:3px}
 .help{font-size:9px;color:var(--muted);text-align:center;margin-top:10px}
-.farmnav{height:64px;flex:0 0 64px;display:grid;grid-template-columns:repeat(5,1fr);align-items:center;border-top:1px solid var(--line);background:var(--panel)} .farmnav button{border:0;background:transparent;font-size:9px;height:100%;padding:4px} .farmnav button+button{border-left:1px solid var(--line)}.integrated-farm-footer select{margin:0 7px;padding:7px 5px}.lot-footer{height:64px;flex:0 0 64px;display:grid;grid-template-columns:1fr 1fr .7fr;align-items:center;border-top:1px solid var(--line);background:var(--panel);padding:7px 12px}.lot-footer button{border:0;background:transparent;text-align:left;font-size:11px}.footer-mini-logo{display:flex;justify-content:center}.lot-footer .footer-logo{max-width:88px;max-height:40px}
+.farmnav{height:64px;flex:0 0 64px;display:grid;grid-template-columns:repeat(5,1fr);align-items:center;border-top:1px solid var(--line);background:var(--panel)} .farmnav button{border:0;background:transparent;font-size:9px;height:100%;padding:4px} .farmnav button+button{border-left:1px solid var(--line)}.integrated-farm-footer select{margin:0 7px;padding:7px 5px}.lot-footer{height:64px;flex:0 0 64px;display:grid;grid-template-columns:1fr 1fr .7fr;align-items:center;border-top:1px solid var(--line);background:var(--panel);padding:7px 12px}.lot-footer button{border:0;background:transparent;text-align:left;font-size:11px}.footer-mini-logo{display:flex;align-items:center;justify-content:center;min-height:48px;cursor:pointer;touch-action:manipulation;border-radius:8px}.footer-mini-logo:focus-visible{outline:2px solid #8a2432;outline-offset:2px}.lot-footer .footer-logo{max-width:88px;max-height:40px}
 .lotmap{height:31%;min-height:215px;background:#eeece4;border-bottom:1px solid var(--line);padding:7px 10px 0}
 .lotmap svg{width:100%;height:100%;display:block}
 .lotcontent{flex:1;overflow:auto;padding:18px 18px 30px}
 .lotstats{margin-top:14px}
 .milestones{margin-top:14px} .section-title{font-size:9px;text-transform:uppercase;letter-spacing:.15em;font-weight:700} .milestones p{font-size:12px;line-height:1.85;margin-top:4px}
-.gallery{margin-top:15px} .photos{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-top:8px} .photo{min-height:88px;border-radius:8px;background:#d8d4cc;display:block;overflow:hidden;color:white;font-size:9px}.photo img{display:block;width:100%;height:100%;min-height:88px;object-fit:cover}.photo.is-unavailable{display:flex;align-items:center;justify-content:center;padding:8px;color:var(--muted);text-align:center}
+.gallery{margin-top:15px} .photos{display:grid;grid-template-columns:repeat(auto-fit,minmax(0,1fr));gap:6px;margin-top:8px} .photo{width:100%;min-height:88px;border:0;border-radius:8px;background:#d8d4cc;display:block;overflow:hidden;color:white;font-size:9px;cursor:zoom-in}.photo img{display:block;width:100%;height:100%;min-height:88px;object-fit:cover}
+.photo-lightbox{position:absolute;inset:0;z-index:300;display:flex;align-items:center;justify-content:center;padding:76px 18px 24px;background:rgba(8,8,8,.94);backdrop-filter:blur(8px);animation:lightbox-in .22s ease both}
+.photo-lightbox[hidden]{display:none}
+.photo-lightbox img{display:block;max-width:100%;max-height:100%;object-fit:contain;border-radius:4px}
+.photo-lightbox-close{position:absolute;top:16px;right:16px;z-index:2;width:54px;height:54px;border:1px solid rgba(255,255,255,.35);border-radius:50%;background:#f2efe9;color:#111;font-size:30px;font-weight:400;line-height:1;display:flex;align-items:center;justify-content:center;box-shadow:0 8px 28px rgba(0,0,0,.28)}
+.photo-lightbox-close:focus-visible{outline:3px solid #8a2432;outline-offset:3px}
+[dir="rtl"] .photo-lightbox-close{right:auto;left:16px}
+@keyframes lightbox-in{from{opacity:0}to{opacity:1}}
 .error{position:absolute;inset:0 0 82px;z-index:30;background:#ebe9e2;display:none;align-items:center;justify-content:center;padding:30px;text-align:center} .error.show{display:flex} .error b{display:block;margin-bottom:8px}
 .loading{position:absolute;inset:0 0 82px;z-index:25;background:#d9d8cf;display:flex;align-items:center;justify-content:center;text-align:center;color:#555;font-size:12px}
 [dir="rtl"] .farm-marker{text-align:right}
@@ -1084,6 +1091,10 @@ to explore</span></div>
       </select>
     </nav>
   </section>
+  <div id="photoLightbox" class="photo-lightbox" role="dialog" aria-modal="true" aria-label="Photo viewer" hidden>
+    <button id="photoLightboxClose" class="photo-lightbox-close" type="button" aria-label="Close photo">×</button>
+    <img id="photoLightboxImage" alt="">
+  </div>
 </div>
 
 <script src="assets/photo-manifest.js"></script>
@@ -2471,16 +2482,121 @@ const DYNAMIC_I18N = {
  ko:{farmIntro:"{farm}의 고도 범위, 면적, 설립 연도와 이야기를 소개합니다.",lotIntro:"{lot}의 풍경과 역사, 그리고 {farm} 안에서의 위치를 소개합니다.",placeholderMilestones:"이 로트의 주요 커피와 기록이 여기에 표시됩니다.",fly:"{farm}(으)로 이동 중…",tapExplore:"눌러서 탐색 →"},
  ar:{farmIntro:"ستظهر هنا مقدمة موجزة عن {farm} تشمل نطاق الارتفاع والمساحة وسنة التأسيس وقصتها.",lotIntro:"ستروي هذه المساحة قصة {lot} ومناظرها وتاريخها ومكانها داخل {farm}.",placeholderMilestones:"ستظهر هنا أبرز أنواع القهوة والمحطات الخاصة بهذه القطعة.",fly:"جارٍ الانتقال إلى {farm}…",tapExplore:"المس للاستكشاف ←"}
 };
+const UI_I18N={
+ en:{photo:"Photo",photoViewer:"Photo viewer",closePhoto:"Close photo",allFarms:"View all farms"},
+ es:{photo:"Foto",photoViewer:"Visor de fotos",closePhoto:"Cerrar foto",allFarms:"Ver todas las fincas"},
+ "zh-Hans":{photo:"照片",photoViewer:"照片查看器",closePhoto:"关闭照片",allFarms:"查看所有庄园"},
+ "zh-Hant":{photo:"照片",photoViewer:"照片檢視器",closePhoto:"關閉照片",allFarms:"查看所有莊園"},
+ ja:{photo:"写真",photoViewer:"写真ビューア",closePhoto:"写真を閉じる",allFarms:"すべての農園を見る"},
+ ko:{photo:"사진",photoViewer:"사진 보기",closePhoto:"사진 닫기",allFarms:"모든 농장 보기"},
+ ar:{photo:"صورة",photoViewer:"عارض الصور",closePhoto:"إغلاق الصورة",allFarms:"عرض جميع المزارع"}
+};
+const CONTENT_I18N={
+ es:{
+  farms:{
+   "Jaramillo":"La familia Peterson compró en 1997 las tierras que se convertirían en Jaramillo. La finca asciende desde colinas bajas y onduladas hasta laderas pronunciadas. La Geisha se sembró en las zonas más altas, y un lote de gran altitud de Jaramillo fue clave en el descubrimiento de Best of Panama de 2004. El aire de montaña de Jaramillo es húmedo y frío, un entorno donde se expresan los aromas brillantes y florales de la Geisha.",
+   "El Velo":"El Velo fue adquirida por la familia Peterson en 2012. Su terreno relativamente plano permite sembrar el café en hileras más uniformes. La finca incluye Geisha y pequeños lotes de variedades exóticas como Laurina, Pacamara y SL-34, además de más de 400 accesiones de investigación obtenidas de CATIE.",
+   "Cañas Verdes":"La mitad de Cañas Verdes forma parte de las propiedades originales adquiridas por la familia Peterson en 1967. Al principio, las tierras se usaron para ganado de carne y después para ganado lechero; pequeños productores también habían cultivado café en esta zona de difícil acceso antes de que la familia Peterson ampliara allí la producción de Geisha. Cañas Verdes tiene una estación seca definida de tres a cuatro meses, aunque el aire se mantiene fresco. Tras el redescubrimiento de la Geisha, la familia amplió la producción mediante la compra de pequeños lotes alrededor de la propiedad original. De sus laderas han salido muchos lotes de Esmeralda Geisha premiados."
+  },
+  milestones:{
+   "El Velo|Laurina":"Campeón de Varietales de Best of Panama 2025 (92.88 pts). El Laurina de El Velo alcanzó después un precio récord para su categoría de US$8,040/kg en subasta.",
+   "Cañas Verdes|Nido":"Lote de récord en Best of Panama 2025. Nido ganó Geisha Lavado con 98.00 pts y Geisha Natural con 97.00 pts, ambas puntuaciones récord. El lote lavado estableció después un récord mundial de subasta de US$30,204/kg; el natural alcanzó un récord de categoría de US$23,608/kg.",
+   "Cañas Verdes|Montaña":"Campeón de Geisha Natural en Best of Panama 2017 (94.115 pts). El lote Montaña estableció entonces un precio récord mundial de subasta de US$601/lb.",
+   "Cañas Verdes|Tumaco":"Best of Panama 2026: segundo lugar en Geisha Natural y tercer lugar en Geisha Lavado."
+  },
+  varieties:{"Accessions":"Accesiones"}
+ },
+ "zh-Hans":{
+  farms:{
+   "Jaramillo":"彼得森家族于1997年购入了后来成为哈拉米约庄园的土地。庄园从起伏的低丘一路延伸至陡峭山坡。瑰夏被种植在庄园较高处，其中一个高海拔地块成为2004年巴拿马最佳咖啡发现历程中的关键。哈拉米约山间湿润而寒冷的空气，让瑰夏明亮、花香般的芳香得以充分展现。",
+   "El Velo":"彼得森家族于2012年购入埃尔维洛庄园。相对平坦的地形让咖啡可以按更整齐的行列种植。庄园种有瑰夏，并设有少量劳瑞娜、帕卡马拉和SL-34等珍稀品种地块，以及从CATIE获得的400多个研究种质资源。",
+   "Cañas Verdes":"卡尼亚斯维德斯有一半属于彼得森家族于1967年购入的原始土地。这里最初用于肉牛养殖，后来改为奶牛养殖；在彼得森家族扩大瑰夏生产之前，小农也曾在这片交通不便的地区种植咖啡。庄园拥有三至四个月分明的旱季，同时空气依然凉爽。瑰夏被重新发现后，家族通过购入原庄园周边的小地块扩大生产。许多获奖的Esmeralda瑰夏都来自这里的山坡。"
+  },
+  milestones:{
+   "El Velo|Laurina":"2025年巴拿马最佳咖啡品种组冠军（92.88分）。随后，埃尔维洛劳瑞娜在拍卖中创下该类别每公斤8,040美元的纪录价格。",
+   "Cañas Verdes|Nido":"2025年巴拿马最佳咖啡创纪录地块。Nido以98.00分获得水洗瑰夏冠军，并以97.00分获得日晒瑰夏冠军，两项均创评分纪录。水洗批次随后以每公斤30,204美元创下世界拍卖纪录；日晒批次则以每公斤23,608美元创下类别纪录。",
+   "Cañas Verdes|Montaña":"2017年巴拿马最佳咖啡日晒瑰夏冠军（94.115分）。Montaña地块当时以每磅601美元创下世界拍卖价格纪录。",
+   "Cañas Verdes|Tumaco":"2026年巴拿马最佳咖啡：日晒瑰夏第二名，水洗瑰夏第三名。"
+  },
+  varieties:{"Accessions":"种质资源"}
+ },
+ "zh-Hant":{
+  farms:{
+   "Jaramillo":"彼得森家族於1997年購​​入了後來成為哈拉米約莊園的土地。莊園從起伏的低丘一路延伸至陡峭山坡。瑰夏種植在莊園較高處，其中一個高海拔地塊成為2004年巴拿馬最佳咖啡發現歷程中的關鍵。哈拉米約山間濕潤而寒冷的空氣，讓瑰夏明亮、花香般的芳香得以充分展現。",
+   "El Velo":"彼得森家族於2012年購入埃爾維洛莊園。相對平坦的地形讓咖啡可以按更整齊的行列種植。莊園種有瑰夏，並設有少量勞瑞娜、帕卡馬拉和SL-34等珍稀品種地塊，以及從CATIE取得的400多個研究種質資源。",
+   "Cañas Verdes":"卡尼亞斯維德斯有一半屬於彼得森家族於1967年購入的原始土地。這裡最初用於肉牛養殖，後來改為乳牛養殖；在彼得森家族擴大瑰夏生產之前，小農也曾在這片交通不便的地區種植咖啡。莊園擁有三至四個月分明的旱季，同時空氣依然涼爽。瑰夏被重新發現後，家族透過購買原莊園周邊的小地塊擴大生產。許多獲獎的Esmeralda瑰夏都來自這裡的山坡。"
+  },
+  milestones:{
+   "El Velo|Laurina":"2025年巴拿馬最佳咖啡品種組冠軍（92.88分）。其後，埃爾維洛勞瑞娜在拍賣中創下該類別每公斤8,040美元的紀錄價格。",
+   "Cañas Verdes|Nido":"2025年巴拿馬最佳咖啡創紀錄地塊。Nido以98.00分獲得水洗瑰夏冠軍，並以97.00分獲得日曬瑰夏冠軍，兩項均創評分紀錄。水洗批次其後以每公斤30,204美元創下世界拍賣紀錄；日曬批次則以每公斤23,608美元創下類別紀錄。",
+   "Cañas Verdes|Montaña":"2017年巴拿馬最佳咖啡日曬瑰夏冠軍（94.115分）。Montaña地塊當時以每磅601美元創下世界拍賣價格紀錄。",
+   "Cañas Verdes|Tumaco":"2026年巴拿馬最佳咖啡：日曬瑰夏第二名，水洗瑰夏第三名。"
+  },
+  varieties:{"Accessions":"種質資源"}
+ },
+ ja:{
+  farms:{
+   "Jaramillo":"ピーターソン家は1997年、後にハラミージョ農園となる土地を購入しました。農園はなだらかな低い丘から急斜面へと広がっています。ゲイシャは農園の高地に植えられ、ハラミージョの高標高ロットは2004年のベスト・オブ・パナマでの発見に重要な役割を果たしました。湿潤で冷涼な山の空気が、ゲイシャの明るく華やかな香りを引き出します。",
+   "El Velo":"エル・ベロ農園は2012年にピーターソン家が購入しました。比較的平坦な地形のため、コーヒーをより均一な列で植えることができます。ゲイシャのほか、ラウリーナ、パカマラ、SL-34などの希少品種の小区画、そしてCATIEから取得した400以上の研究用アクセッションがあります。",
+   "Cañas Verdes":"カーニャス・ベルデスの半分は、ピーターソン家が1967年に購入した当初の土地です。最初は肉牛、その後は乳牛の飼育に使われました。交通の難しいこの地域では、家族がゲイシャ生産を拡大する以前から小規模農家がコーヒーを栽培していました。明確な乾季は3〜4か月続きますが、空気は涼しく保たれます。ゲイシャの再発見後、周辺の小区画を取得して生産を拡大しました。数多くの受賞歴を持つEsmeraldaゲイシャが、この丘陵地から生まれています。"
+  },
+  milestones:{
+   "El Velo|Laurina":"ベスト・オブ・パナマ2025品種部門優勝（92.88点）。エル・ベロのラウリーナはその後、オークションで同カテゴリー最高記録となる1kg当たり8,040米ドルを達成しました。",
+   "Cañas Verdes|Nido":"ベスト・オブ・パナマ2025で記録を樹立したロット。Nidoはウォッシュド・ゲイシャで98.00点、ナチュラル・ゲイシャで97.00点を獲得し、両部門で記録的なスコアを達成しました。その後、ウォッシュドは1kg当たり30,204米ドルの世界オークション記録、ナチュラルは1kg当たり23,608米ドルの部門記録を樹立しました。",
+   "Cañas Verdes|Montaña":"ベスト・オブ・パナマ2017ナチュラル・ゲイシャ部門優勝（94.115点）。Montañaロットは当時、1ポンド当たり601米ドルの世界オークション価格記録を樹立しました。",
+   "Cañas Verdes|Tumaco":"ベスト・オブ・パナマ2026：ナチュラル・ゲイシャ第2位、ウォッシュド・ゲイシャ第3位。"
+  },
+  varieties:{"Accessions":"アクセッション"}
+ },
+ ko:{
+  farms:{
+   "Jaramillo":"피터슨 가족은 1997년에 훗날 하라미요 농장이 된 땅을 매입했습니다. 농장은 완만한 낮은 언덕에서 가파른 경사면까지 이어집니다. 게이샤는 농장의 더 높은 지역에 심어졌으며, 하라미요의 고지대 로트는 2004년 베스트 오브 파나마에서의 발견에 핵심적인 역할을 했습니다. 습하고 차가운 산 공기는 게이샤의 밝고 꽃향기 같은 아로마가 잘 드러나는 환경을 만듭니다.",
+   "El Velo":"엘 벨로 농장은 2012년에 피터슨 가족이 매입했습니다. 비교적 평평한 지형 덕분에 커피를 더 균일한 줄로 심을 수 있습니다. 게이샤와 함께 라우리나, 파카마라, SL-34 같은 희귀 품종의 소규모 로트, 그리고 CATIE에서 확보한 400개 이상의 연구용 유전자원이 있습니다.",
+   "Cañas Verdes":"카냐스 베르데스의 절반은 피터슨 가족이 1967년에 매입한 초기 토지의 일부입니다. 처음에는 육우, 이후에는 젖소 사육에 사용되었으며, 접근이 어려운 이 지역에서는 가족이 게이샤 생산을 확대하기 전부터 소규모 농가가 커피를 재배했습니다. 뚜렷한 건기는 3~4개월 이어지지만 공기는 서늘하게 유지됩니다. 게이샤가 재발견된 후 가족은 기존 농장 주변의 작은 로트를 인수해 생산을 확대했습니다. 수상 경력이 있는 많은 Esmeralda 게이샤 로트가 이 언덕에서 나왔습니다."
+  },
+  milestones:{
+   "El Velo|Laurina":"2025 베스트 오브 파나마 품종 부문 우승(92.88점). 엘 벨로 라우리나는 이후 경매에서 해당 부문 기록인 kg당 미화 8,040달러를 달성했습니다.",
+   "Cañas Verdes|Nido":"2025 베스트 오브 파나마 기록 수립 로트. Nido는 워시드 게이샤 98.00점과 내추럴 게이샤 97.00점으로 우승했으며 두 점수 모두 기록이었습니다. 이후 워시드 로트는 kg당 미화 30,204달러로 세계 경매 기록을 세웠고, 내추럴 로트는 kg당 미화 23,608달러로 부문 기록을 달성했습니다.",
+   "Cañas Verdes|Montaña":"2017 베스트 오브 파나마 내추럴 게이샤 우승(94.115점). Montaña 로트는 당시 파운드당 미화 601달러로 세계 경매 가격 기록을 세웠습니다.",
+   "Cañas Verdes|Tumaco":"2026 베스트 오브 파나마: 내추럴 게이샤 2위, 워시드 게이샤 3위."
+  },
+  varieties:{"Accessions":"유전자원"}
+ },
+ ar:{
+  farms:{
+   "Jaramillo":"اشترت عائلة بيترسون عام 1997 الأرض التي أصبحت مزرعة جاراميو. تمتد المزرعة من تلال منخفضة متموجة إلى منحدرات شديدة. زُرعت قهوة الغيشا في المناطق الأعلى، وكان أحد القطع المرتفعة في جاراميو محورياً في اكتشاف مسابقة أفضل قهوة في بنما لعام 2004. هواء الجبل الرطب والبارد يتيح لعطور الغيشا الزاهية والزهرية أن تظهر بوضوح.",
+   "El Velo":"اشترت عائلة بيترسون مزرعة إل فيلو عام 2012. تسمح تضاريسها المستوية نسبياً بزراعة القهوة في صفوف أكثر انتظاماً. تضم المزرعة غيشا وقطعاً صغيرة من أصناف نادرة مثل لورينا وباكامارا وSL-34، إضافة إلى أكثر من 400 مدخل وراثي بحثي من CATIE.",
+   "Cañas Verdes":"يشكّل نصف كانياس فيرديس جزءاً من الأراضي الأصلية التي اشترتها عائلة بيترسون عام 1967. استُخدمت الأرض أولاً لتربية أبقار اللحم ثم أبقار الحليب؛ كما زرع صغار المنتجين القهوة في هذه المنطقة صعبة الوصول قبل أن توسّع العائلة إنتاج الغيشا فيها. تتميز المزرعة بموسم جفاف واضح يدوم ثلاثة إلى أربعة أشهر مع بقاء الهواء بارداً. وبعد إعادة اكتشاف الغيشا، توسعت العائلة بشراء قطع صغيرة حول الملكية الأصلية. وقد خرجت من منحدراتها عدة قطع من Esmeralda Geisha الحائزة على جوائز."
+  },
+  milestones:{
+   "El Velo|Laurina":"بطلة فئة الأصناف في مسابقة أفضل قهوة في بنما 2025 بنتيجة 92.88 نقطة. وحققت لورينا من إل فيلو لاحقاً سعراً قياسياً لفئتها بلغ 8,040 دولاراً أمريكياً للكيلوغرام في المزاد.",
+   "Cañas Verdes|Nido":"قطعة قياسية في مسابقة أفضل قهوة في بنما 2025. فازت Nido بفئة غيشا المغسولة بنتيجة 98.00 نقطة وبفئة غيشا الطبيعية بنتيجة 97.00 نقطة، وكلتاهما درجتان قياسيتان. وسجلت الدفعة المغسولة لاحقاً رقماً عالمياً في المزاد بلغ 30,204 دولارات للكيلوغرام، بينما بلغت الطبيعية رقماً قياسياً لفئتها قدره 23,608 دولارات للكيلوغرام.",
+   "Cañas Verdes|Montaña":"بطلة غيشا الطبيعية في مسابقة أفضل قهوة في بنما 2017 بنتيجة 94.115 نقطة. وسجلت قطعة Montaña آنذاك سعراً قياسياً عالمياً في المزاد بلغ 601 دولار أمريكي للرطل.",
+   "Cañas Verdes|Tumaco":"مسابقة أفضل قهوة في بنما 2026: المركز الثاني في غيشا الطبيعية والمركز الثالث في غيشا المغسولة."
+  },
+  varieties:{"Accessions":"مدخلات وراثية"}
+ }
+};
 Object.entries(DYNAMIC_I18N).forEach(([lang,vals])=>Object.assign(I18N[lang],vals));
+Object.entries(UI_I18N).forEach(([lang,vals])=>Object.assign(I18N[lang],vals));
 function tr(key, vars={}){
  const dict=I18N[currentLang]||I18N.en;
  let s=dict[key] || I18N.en[key] || key;
  Object.entries(vars).forEach(([k,v])=>s=s.replaceAll("{"+k+"}",v));
  return s;
 }
+function localizedFarmDescription(name){
+ return CONTENT_I18N[currentLang]?.farms?.[name] || FARM_INFO[name]?.description || "";
+}
+function localizedMilestones(farmName,lotName){
+ return CONTENT_I18N[currentLang]?.milestones?.[`${farmName}|${lotName}`] || LOT_INFO[farmName]?.[lotName]?.milestones || "";
+}
+function localizedVariety(value){
+ return CONTENT_I18N[currentLang]?.varieties?.[value] || value;
+}
 
 const FARM_MAP_MAX_ZOOM=18;
-let currentLang="en", currentFarm="Jaramillo", map, markers=[], idleTimer, farmMap=null, lotMap=null, attractMap=null, attractDrift=null, farmLotMarkers=[];
+let currentLang="en", currentFarm="Jaramillo", currentLot="", map, markers=[], idleTimer, farmMap=null, lotMap=null, attractMap=null, attractDrift=null, farmLotMarkers=[];
 
 function updateFarmZoomButtons(){
  const zoomIn=document.getElementById("farmZoomIn");
@@ -4607,27 +4723,57 @@ Object.entries(OMITTED_LOTS).forEach(([farm,names])=>{
 
 
 const attract=document.getElementById("attractScreen"), home=document.getElementById("homeScreen"), farmScreen=document.getElementById("farmScreen"), lotScreen=document.getElementById("lotScreen");
-const homeFooterLogo=document.querySelector("#homeScreen .map-footer-logo"), lotFooterLogo=document.querySelector("#lotScreen .footer-mini-logo img");
+const photoLightbox=document.getElementById("photoLightbox"), photoLightboxImage=document.getElementById("photoLightboxImage"), photoLightboxClose=document.getElementById("photoLightboxClose");
+const LIGHTBOX_IDLE_MS=30000;
+let lightboxTrigger=null, lightboxIdleTimer;
+const homeFooterLogo=document.querySelector("#homeScreen .map-footer-logo"), lotFooterHome=document.querySelector("#lotScreen .footer-mini-logo"), lotFooterLogo=lotFooterHome?.querySelector("img");
 if(homeFooterLogo && lotFooterLogo){
  lotFooterLogo.src=homeFooterLogo.src;
  lotFooterLogo.alt=homeFooterLogo.alt;
 }
+if(lotFooterHome){
+ lotFooterHome.setAttribute("role","button");
+ lotFooterHome.setAttribute("tabindex","0");
+}
 function showScreen(s){[attract,home,farmScreen,lotScreen].forEach(x=>x.classList.add("hidden"));s.classList.remove("hidden")}
 function applyFarmContent(name){
  const info=FARM_INFO[name]||{};
- document.getElementById("farmDescription").textContent=info.description||"";
+ document.getElementById("farmDescription").textContent=localizedFarmDescription(name);
  document.getElementById("farmAltitude").textContent=info.altitude||"—";
  document.getElementById("farmArea").textContent=info.area||"—";
  document.getElementById("farmEstablished").textContent=info.established||"—";
 }
+function applyLotContent(farmName,lotName){
+ const info=(LOT_INFO[farmName]||{})[lotName]||{};
+ document.getElementById("lotAltitude").textContent=info.altitude||"—";
+ document.getElementById("lotVariety").textContent=localizedVariety(info.variety)||"—";
+ document.getElementById("lotArea").textContent=info.area||"—";
+ const description=document.getElementById("lotDescription");
+ description.textContent=info.description||"";
+ description.hidden=!info.description;
+ const milestoneText=localizedMilestones(farmName,lotName);
+ document.getElementById("milestoneContent").textContent=milestoneText;
+ document.getElementById("lotMilestones").hidden=!milestoneText;
+ document.querySelectorAll("#lotPhotos .photo").forEach((button,index)=>{
+  const label=`${tr("photo")} ${index+1}: ${lotName}`;
+  button.setAttribute("aria-label",label);
+  const image=button.querySelector("img");
+  if(image) image.alt=label;
+ });
+}
 function applyLanguage(lang){
- currentLang=lang; document.documentElement.lang=lang; document.documentElement.dir=lang==="ar"?"rtl":"ltr";
+ const dict=I18N[lang]||I18N.en;
+ currentLang=I18N[lang]?lang:"en"; document.documentElement.lang=currentLang; document.documentElement.dir=currentLang==="ar"?"rtl":"ltr";
  document.querySelectorAll(".languageSelect").forEach(s=>s.value=lang);
- document.querySelectorAll("[data-i18n]").forEach(el=>{const k=el.dataset.i18n;if(I18N[lang][k])el.textContent=I18N[lang][k]});
- document.getElementById("mapPrompt").textContent=I18N[lang].prompt; const homeTitleEl=document.getElementById("homeTitle"); if(homeTitleEl) homeTitleEl.textContent=I18N[lang].explore;
+ document.querySelectorAll("[data-i18n]").forEach(el=>{const k=el.dataset.i18n;if(dict[k])el.textContent=dict[k]});
+ document.getElementById("mapPrompt").textContent=dict.prompt; const homeTitleEl=document.getElementById("homeTitle"); if(homeTitleEl) homeTitleEl.textContent=dict.explore;
+ photoLightbox.setAttribute("aria-label",tr("photoViewer"));
+ photoLightboxClose.setAttribute("aria-label",tr("closePhoto"));
+ if(lotFooterHome) lotFooterHome.setAttribute("aria-label",tr("allFarms"));
  
  const farmNameEl=document.getElementById("farmName");
- if(farmNameEl && !farmScreen.classList.contains("hidden")) applyFarmContent(farmNameEl.textContent);
+ if(farmNameEl && !farmScreen.classList.contains("hidden")) applyFarmContent(currentFarm);
+ if(currentLot && !lotScreen.classList.contains("hidden")) applyLotContent(currentFarm,currentLot);
  resetIdle();
 }
 document.querySelectorAll(".languageSelect").forEach(s=>s.addEventListener("change",e=>applyLanguage(e.target.value)));
@@ -4745,6 +4891,7 @@ function enterExperience(){
  resetIdle();
 }
 function returnToAttract(){
+ closePhotoLightbox(false);
  currentLang="en";
  document.documentElement.lang="en";
  document.documentElement.dir="ltr";
@@ -4975,50 +5122,82 @@ function renderFarm(name){
 }
 function openLot(farmName,lotName){
  currentFarm=farmName;
+ currentLot=lotName;
  document.getElementById("lotFarmBack").textContent=farmName;
  const footerLotFarm=document.getElementById("footerLotFarm"); if(footerLotFarm) footerLotFarm.textContent=farmName;
  document.getElementById("lotFarmEyebrow").textContent=farmName;
  document.getElementById("lotName").textContent=lotName;
  const info=(LOT_INFO[farmName]||{})[lotName]||{};
- document.getElementById("lotAltitude").textContent=info.altitude||"—";
- document.getElementById("lotVariety").textContent=info.variety||"—";
- document.getElementById("lotArea").textContent=info.area||"—";
- const description=document.getElementById("lotDescription");
- description.textContent=info.description||"";
- description.hidden=!info.description;
- const milestones=document.getElementById("lotMilestones");
- document.getElementById("milestoneContent").textContent=info.milestones||"";
- milestones.hidden=!info.milestones;
+ applyLotContent(farmName,lotName);
  const gallery=document.getElementById("lotGallery");
  const photoGrid=document.getElementById("lotPhotos");
  photoGrid.replaceChildren();
  const photos=(info.photos||[]).filter(Boolean).slice(0,3);
  gallery.hidden=!photos.length;
  photos.forEach((path,index)=>{
-  const link=document.createElement("a");
+  const link=document.createElement("button");
+  link.type="button";
   link.className="photo";
-  link.href=path;
-  link.target="_blank";
-  link.rel="noopener noreferrer";
-  link.setAttribute("aria-label",`${lotName} photo ${index+1}`);
+  const photoLabel=`${tr("photo")} ${index+1}: ${lotName}`;
+  link.setAttribute("aria-label",photoLabel);
   const image=document.createElement("img");
-  image.src=path;
-  image.alt=`${lotName} photo ${index+1}`;
-  image.loading="lazy";
+  image.alt=photoLabel;
+  image.loading="eager";
+  image.fetchPriority="high";
   image.decoding="async";
+  let attempts=0;
+  const loadPhoto=()=>{
+   const retrySuffix=attempts ? `${path.includes("?")?"&":"?"}retry=${Date.now()}-${attempts}` : "";
+   image.src=path+retrySuffix;
+  };
   image.addEventListener("error",()=>{
-   image.remove();
-   link.classList.add("is-unavailable");
-   link.textContent="Open photo";
-  },{once:true});
+   attempts+=1;
+   if(attempts<3){
+    setTimeout(loadPhoto,250*attempts);
+    return;
+   }
+   link.remove();
+   if(!photoGrid.childElementCount) gallery.hidden=true;
+  });
+  link.addEventListener("click",()=>openPhotoLightbox(image.currentSrc||image.src||path,image.alt,link));
   link.appendChild(image);
   photoGrid.appendChild(link);
+  loadPhoto();
  });
  showScreen(lotScreen);
  setTimeout(()=>createLotSatelliteMap(farmName,lotName),80);
  resetIdle();
 }
 
+function openPhotoLightbox(src,alt,trigger){
+ lightboxTrigger=trigger||document.activeElement;
+ photoLightboxImage.src=src;
+ photoLightboxImage.alt=alt||tr("photo");
+ photoLightbox.hidden=false;
+ resetLightboxIdle();
+ photoLightboxClose.focus();
+}
+function closePhotoLightbox(restoreFocus=true){
+ clearTimeout(lightboxIdleTimer);
+ if(photoLightbox.hidden) return;
+ photoLightbox.hidden=true;
+ photoLightboxImage.removeAttribute("src");
+ photoLightboxImage.alt="";
+ if(restoreFocus && lightboxTrigger?.isConnected) lightboxTrigger.focus();
+ lightboxTrigger=null;
+}
+function resetLightboxIdle(){
+ clearTimeout(lightboxIdleTimer);
+ if(!photoLightbox.hidden) lightboxIdleTimer=setTimeout(()=>closePhotoLightbox(false),LIGHTBOX_IDLE_MS);
+}
+photoLightboxClose.addEventListener("click",()=>closePhotoLightbox());
+photoLightbox.addEventListener("click",event=>{if(event.target===photoLightbox) closePhotoLightbox()});
+document.addEventListener("keydown",event=>{
+ if(event.key==="Escape" && !photoLightbox.hidden){
+  event.preventDefault();
+  closePhotoLightbox();
+ }
+});
 
 attract.addEventListener("pointerdown",enterExperience);
 attract.addEventListener("keydown",e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();enterExperience();}});
@@ -5028,6 +5207,14 @@ document.getElementById("footerBackToFarm").addEventListener("click",()=>{render
 
 document.getElementById("backToMap").addEventListener("click",()=>{showScreen(home);resetHomeCamera();});
 document.getElementById("backToFarm").addEventListener("click",()=>{renderFarm(currentFarm);showScreen(farmScreen)});
+function showAllFarms(){closePhotoLightbox(false);showScreen(home);resetHomeCamera();resetIdle()}
+lotFooterHome?.addEventListener("click",showAllFarms);
+lotFooterHome?.addEventListener("keydown",event=>{
+ if(event.key==="Enter"||event.key===" "){
+  event.preventDefault();
+  showAllFarms();
+ }
+});
 document.querySelectorAll("[data-jump]").forEach(b=>b.addEventListener("click",()=>renderFarm(b.dataset.jump)));
 function resetHomeCamera(immediate=false){
  home.classList.remove("farm-zooming");
@@ -5040,6 +5227,7 @@ function resetHomeCamera(immediate=false){
 }
 function resetIdle(){clearTimeout(idleTimer);idleTimer=setTimeout(()=>{returnToAttract()},90000)}
 ["pointerdown","keydown"].forEach(ev=>document.addEventListener(ev,resetIdle,{passive:true}));
+["pointerdown","keydown"].forEach(ev=>document.addEventListener(ev,resetLightboxIdle,{passive:true}));
 window.addEventListener("load",()=>{applyLanguage("en");clearTimeout(idleTimer);showScreen(attract);initAttractMap()});
 </script>
 <script src="https://unpkg.com/maplibre-gl@5.7.1/dist/maplibre-gl.js" onload="initMap()" onerror="document.getElementById('loading').style.display='none';document.getElementById('mapError').classList.add('show')"></script>
