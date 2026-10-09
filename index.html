@@ -4,12 +4,14 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
 <title>Hacienda La Esmeralda — Interactive Farm Explorer v29 Guided Journey</title>
-<link href="https://unpkg.com/maplibre-gl@5.7.1/dist/maplibre-gl.css" rel="stylesheet">
+<link href="assets/vendor/maplibre-gl.css" rel="stylesheet">
 <link rel="stylesheet" href="https://use.typekit.net/xgu2gfn.css">
 <style>
 :root{--bg:#f6f5f0;--panel:#fbfaf6;--text:#20211d;--muted:#72746c;--line:#d8d7cf;--accent:#626957;--accent2:#dfe3d7}
 *{box-sizing:border-box}
 html,body{margin:0;width:100%;height:100%;background:#111;font-family:"acumin-variable",Arial,Helvetica,sans-serif;color:var(--text);overflow:hidden}
+body.kiosk-scaled{display:flex;align-items:center;justify-content:center}
+body.kiosk-scaled #app{flex:none;margin:0}
 button,select{font:inherit}
 button{cursor:pointer}
 #app{width:min(100vw,540px);height:100%;min-height:700px;margin:auto;position:relative;background:var(--panel);overflow:hidden}
@@ -421,6 +423,12 @@ h1,h2,p{margin:0} h1{font-size:32px;line-height:1.02;margin-top:4px} h2{font-siz
   height:52px;
   transform:translate(-50%,-50%);
   border-radius:50%;
+}
+#farmScreen .lot-tag-marker::before{
+  pointer-events:none;
+}
+#farmScreen .lot-tag-label{
+  pointer-events:none;
 }
 .farm-marker .pin-dot,
 .lot-tag-marker .lot-pin{
@@ -2597,6 +2605,7 @@ function localizedVariety(value){
 
 const FARM_MAP_MAX_ZOOM=18;
 let currentLang="en", currentFarm="Jaramillo", currentLot="", map, markers=[], idleTimer, farmMap=null, lotMap=null, attractMap=null, attractDrift=null, farmLotMarkers=[];
+let farmFlightHandler=null, farmFlightFallback=null;
 
 function updateFarmZoomButtons(){
  const zoomIn=document.getElementById("farmZoomIn");
@@ -4726,6 +4735,25 @@ const attract=document.getElementById("attractScreen"), home=document.getElement
 const photoLightbox=document.getElementById("photoLightbox"), photoLightboxImage=document.getElementById("photoLightboxImage"), photoLightboxClose=document.getElementById("photoLightboxClose");
 const LIGHTBOX_IDLE_MS=30000;
 let lightboxTrigger=null, lightboxIdleTimer;
+function fitPortraitKiosk(){
+ const app=document.getElementById("app");
+ const isPortrait=window.innerHeight/window.innerWidth>=1.55;
+ const scale=isPortrait?Math.min(window.innerWidth/540,window.innerHeight/960):1;
+ if(scale>1.15){
+  document.body.classList.add("kiosk-scaled");
+  app.style.width="540px";
+  app.style.height="960px";
+  app.style.minHeight="960px";
+  app.style.zoom=String(scale);
+ }else{
+  document.body.classList.remove("kiosk-scaled");
+  app.style.width="";
+  app.style.height="";
+  app.style.minHeight="";
+  app.style.zoom="";
+ }
+ requestAnimationFrame(()=>[attractMap,map,farmMap,lotMap].forEach(instance=>{try{instance?.resize()}catch(e){}}));
+}
 const homeFooterLogo=document.querySelector("#homeScreen .map-footer-logo"), lotFooterHome=document.querySelector("#lotScreen .footer-mini-logo"), lotFooterLogo=lotFooterHome?.querySelector("img");
 if(homeFooterLogo && lotFooterLogo){
  lotFooterLogo.src=homeFooterLogo.src;
@@ -4735,7 +4763,11 @@ if(lotFooterHome){
  lotFooterHome.setAttribute("role","button");
  lotFooterHome.setAttribute("tabindex","0");
 }
-function showScreen(s){[attract,home,farmScreen,lotScreen].forEach(x=>x.classList.add("hidden"));s.classList.remove("hidden")}
+function showScreen(s){
+ [attract,home,farmScreen,lotScreen].forEach(x=>x.classList.add("hidden"));
+ s.classList.remove("hidden");
+ document.getElementById("app").scrollTop=0;
+}
 function applyFarmContent(name){
  const info=FARM_INFO[name]||{};
  document.getElementById("farmDescription").textContent=localizedFarmDescription(name);
@@ -4892,6 +4924,7 @@ function enterExperience(){
 }
 function returnToAttract(){
  closePhotoLightbox(false);
+ cancelFarmFlight();
  currentLang="en";
  document.documentElement.lang="en";
  document.documentElement.dir="ltr";
@@ -4908,7 +4941,7 @@ function initMap(){
  try{
  map=new maplibregl.Map({
    container:"map",
-   style:{version:8,sources:{sat:{type:"raster",tiles:["https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"],tileSize:256,attribution:"Tiles © Esri"}},layers:[{id:"sat",type:"raster",source:"sat"}]},
+   style:{version:8,sources:{sat:{type:"raster",tiles:["https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"],tileSize:256,attribution:"Tiles © Esri"}},layers:[{id:"offline-background",type:"background",paint:{"background-color":"#344137"}},{id:"sat",type:"raster",source:"sat"}]},
    center:[-82.47,8.79],zoom:11.4,pitch:58,bearing:18,interactive:false,antialias:true
  });
  const fail=setTimeout(()=>{document.getElementById("loading").style.display="none";document.getElementById("mapError").classList.add("show")},12000);
@@ -4931,13 +4964,27 @@ const FARM_CAMERA={
  "El Velo":{zoom:14.7,pitch:62,bearing:28},
  "Cañas Verdes":{zoom:15.0,pitch:62,bearing:12}
 };
+function cancelFarmFlight(){
+ clearTimeout(farmFlightFallback);
+ farmFlightFallback=null;
+ if(map && farmFlightHandler) map.off("moveend",farmFlightHandler);
+ farmFlightHandler=null;
+}
 function flyToFarm(name){
+ cancelFarmFlight();
  currentFarm=name;resetIdle();
  const center=farmCenter(name), cam=FARM_CAMERA[name];
  home.classList.add("farm-zooming");
- map.flyTo({center,zoom:cam.zoom,pitch:cam.pitch,bearing:cam.bearing,duration:3600,essential:true});
- const done=()=>{map.off("moveend",done);setTimeout(()=>transitionToIllustration(name),350)};
+ const done=()=>{
+  if(farmFlightHandler!==done) return;
+  cancelFarmFlight();
+  setTimeout(()=>transitionToIllustration(name),350);
+ };
+ farmFlightHandler=done;
  map.on("moveend",done);
+ map.flyTo({center,zoom:cam.zoom,pitch:cam.pitch,bearing:cam.bearing,duration:3600,essential:true});
+ // Continue the journey even if another map event interrupts the animation.
+ farmFlightFallback=setTimeout(done,4200);
 }
 function transitionToIllustration(name){
  const veil=document.getElementById("transitionVeil");veil.classList.add("on");
@@ -4974,7 +5021,10 @@ function buildRasterStyle(){
         attribution:"Tiles © Esri"
       }
     },
-    layers:[{id:"sat",type:"raster",source:"sat"}]
+    layers:[
+      {id:"offline-background",type:"background",paint:{"background-color":"#344137"}},
+      {id:"sat",type:"raster",source:"sat"}
+    ]
   };
 }
 function farmGeoJSON(name){
@@ -5050,7 +5100,11 @@ function addFarmLotTagMarkers(targetMap,farmName){
    el.className="lot-tag-marker";
    el.setAttribute("aria-label",lotName);
    el.innerHTML=`<span class="lot-pin" aria-hidden="true"></span><span class="lot-tag-label"><b>${lotName}</b></span>`;
-    el.addEventListener("click",()=>openLot(farmName,lotName));
+    el.addEventListener("pointerdown",event=>event.stopPropagation());
+    el.addEventListener("click",event=>{
+      event.stopPropagation();
+      openLot(farmName,lotName);
+    });
     const mk=new maplibregl.Marker({element:el,anchor:"center"}).setLngLat(centroid(coords)).addTo(targetMap);
     farmLotMarkers.push(mk);
   });
@@ -5217,6 +5271,7 @@ lotFooterHome?.addEventListener("keydown",event=>{
 });
 document.querySelectorAll("[data-jump]").forEach(b=>b.addEventListener("click",()=>renderFarm(b.dataset.jump)));
 function resetHomeCamera(immediate=false){
+ cancelFarmFlight();
  home.classList.remove("farm-zooming");
  if(map){
   map.fitBounds([[-82.552,8.724],[-82.386,8.835]],{padding:{top:75,bottom:85,left:36,right:36},duration:immediate?0:1200});
@@ -5228,8 +5283,9 @@ function resetHomeCamera(immediate=false){
 function resetIdle(){clearTimeout(idleTimer);idleTimer=setTimeout(()=>{returnToAttract()},90000)}
 ["pointerdown","keydown"].forEach(ev=>document.addEventListener(ev,resetIdle,{passive:true}));
 ["pointerdown","keydown"].forEach(ev=>document.addEventListener(ev,resetLightboxIdle,{passive:true}));
-window.addEventListener("load",()=>{applyLanguage("en");clearTimeout(idleTimer);showScreen(attract);initAttractMap()});
+window.addEventListener("resize",fitPortraitKiosk);
+window.addEventListener("load",()=>{fitPortraitKiosk();applyLanguage("en");clearTimeout(idleTimer);showScreen(attract);initAttractMap()});
 </script>
-<script src="https://unpkg.com/maplibre-gl@5.7.1/dist/maplibre-gl.js" onload="initMap()" onerror="document.getElementById('loading').style.display='none';document.getElementById('mapError').classList.add('show')"></script>
+<script src="assets/vendor/maplibre-gl.js" onload="initMap()" onerror="document.getElementById('loading').style.display='none';document.getElementById('mapError').classList.add('show')"></script>
 </body>
 </html>
